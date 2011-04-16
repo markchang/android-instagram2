@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res/org.acmelab.andgram2"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        >
+    <com.markupartist.android.widget.ActionBar
+            android:id="@+id/dashboardActionbar"
+            style="@style/ActionBar"
+            />
+
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="6dip">
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+            <Button android:id="@+id/activity_button"
+                    android:onClick="openFeedIntent"
+                    style="@style/DashboardButton"
+                    android:text="@string/feed"
+                    android:drawableTop="@drawable/ic_menu_allfriends"/>
+            <Button android:id="@+id/popular_button"
+                    android:onClick="openPopularGridIntent"
+                    style="@style/DashboardButton"
+                    android:text="@string/popular"
+                    android:drawableTop="@drawable/ic_menu_star"/>
+        </LinearLayout>
+
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+            <Button android:id="@+id/user_feed_button"
+                    android:onClick="openUserfeedIntent"
+                    style="@style/DashboardButton"
+                    android:text="@string/userfeed"
+                    android:drawableTop="@drawable/ic_menu_slideshow"/>
+            <Button android:id="@+id/camera_button"
+                    android:onClick="openPictureIntent"
+                    style="@style/DashboardButton"
+                    android:text="@string/take_picture"
+                    android:drawableTop="@drawable/ic_menu_camera"/>
+        </LinearLayout>
+
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+            <Button android:id="@+id/gallery_button"
+                    android:onClick="openGalleryIntent"
+                    style="@style/DashboardButton"
+                    android:text="@string/gallery"
+                    android:drawableTop="@drawable/ic_menu_gallery"/>
+            <Button android:id="@+id/login_button"
+                    android:onClick="openLoginIntent"
+                    style="@style/DashboardButton"
+                    android:text="@string/login"
+                    android:drawableTop="@drawable/ic_menu_login"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

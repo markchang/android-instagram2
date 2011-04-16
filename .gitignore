@@ -1,0 +1,6 @@
+out/
+.idea/workspace.xml
+tmp/
+gen/
+libs/.DS_Store
+src/org/acmelab/andgram2/Credentials.java
