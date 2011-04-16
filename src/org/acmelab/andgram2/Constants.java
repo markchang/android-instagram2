@@ -38,4 +38,8 @@ package org.acmelab.andgram2;
 public class Constants {
     public static final String TAG = "ANDGRAM2";
     public static final String PREFS_NAME = "andgram2_prefs";
+
+    public static final String AUTHORIZATION_URL = "https://api.instagram.com/oauth/authorize/";
+    public static final String ACCESS_TOKEN_ENDPOINT = "https://api.instagram.com/oauth/access_token";
+    public static final String REDIRECT_URI = "andgram://";
 }

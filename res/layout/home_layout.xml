@@ -9,6 +9,7 @@
     <com.markupartist.android.widget.ActionBar
             android:id="@+id/dashboardActionbar"
             style="@style/ActionBar"
+            app:title="@string/app_name"
             />
 
     <LinearLayout
@@ -44,11 +45,11 @@
                     style="@style/DashboardButton"
                     android:text="@string/userfeed"
                     android:drawableTop="@drawable/ic_menu_slideshow"/>
-            <Button android:id="@+id/camera_button"
-                    android:onClick="openPictureIntent"
+            <Button android:id="@+id/login_button"
+                    android:onClick="openLoginIntent"
                     style="@style/DashboardButton"
-                    android:text="@string/take_picture"
-                    android:drawableTop="@drawable/ic_menu_camera"/>
+                    android:text="@string/login"
+                    android:drawableTop="@drawable/ic_menu_login"/>
         </LinearLayout>
 
         <LinearLayout
@@ -56,16 +57,6 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1">
-            <Button android:id="@+id/gallery_button"
-                    android:onClick="openGalleryIntent"
-                    style="@style/DashboardButton"
-                    android:text="@string/gallery"
-                    android:drawableTop="@drawable/ic_menu_gallery"/>
-            <Button android:id="@+id/login_button"
-                    android:onClick="openLoginIntent"
-                    style="@style/DashboardButton"
-                    android:text="@string/login"
-                    android:drawableTop="@drawable/ic_menu_login"/>
         </LinearLayout>
     </LinearLayout>
 

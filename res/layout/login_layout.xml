@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res/org.acmelab.andgram2"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+        >
+    <com.markupartist.android.widget.ActionBar
+            android:id="@+id/dashboardActionbar"
+            style="@style/ActionBar"
+            app:title="@string/login"
+            />
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/oauth_login_description"
+        android:textSize="16sp"
+    />
+
+    <Button
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/login_button"
+        android:onClick="doAuth"/>
+
+
+</LinearLayout>
+
