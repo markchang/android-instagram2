@@ -30,6 +30,7 @@ package org.acmelab.andgram2;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.*;
 import android.os.Bundle;
 import android.util.Log;
@@ -48,30 +49,29 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import javax.net.ssl.SSLException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class HomeActivity extends Activity
 {
     private static final String AUTHORIZATION_URL = "https://api.instagram.com/oauth/authorize/";
     private static final String ACCESS_TOKEN_ENDPOINT = "https://api.instagram.com/oauth/access_token";
     private static final String REDIRECT_URI = "andgram://";
-    private static final String TAG = "ANDGRAM2";
 
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        Log.i(TAG, "onCreate");
+        Log.i(Constants.TAG, "onCreate");
         setContentView(R.layout.main);
     }
 
     public void doAuth(View view) {
-        Log.i(TAG, "doAuth");
+        Log.i(Constants.TAG, "doAuth");
         // == STEP ONE: DIRECT YOUR USER TO OUR AUTHORIZATION URL
         Intent webAuthIntent = new Intent(Intent.ACTION_VIEW);
         webAuthIntent.setData(Uri.parse(getAuthorizationUrl()));
@@ -93,15 +93,34 @@ public class HomeActivity extends Activity
     public void onResume() {
         super.onResume();
 
-        Log.i(TAG, "onResume");
+        Log.i(Constants.TAG, "onResume");
 
         Uri uri = this.getIntent().getData();
         if( uri != null ) {
+            // oauth callback, so we update or create our credentials
             String access_code = retrieveAccessCode(uri);
-            String access_token = requestAccessToken(access_code);
+            Map<String,String> oauthMap = requestAccessToken(access_code);
 
-            Toast.makeText(this, "Got access token: " + access_token, Toast.LENGTH_LONG).show();
-            Log.i(TAG, "Got access token: " + access_token);
+            if( oauthMap != null ) {
+                SharedPreferences sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.clear();
+
+                // stash in preferences
+                Iterator it = oauthMap.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry pairs = (Map.Entry)it.next();
+                    editor.putString((String)pairs.getKey(), (String)pairs.getValue());
+                    System.out.println(pairs.getKey() + " = " + pairs.getValue());
+                }
+                editor.commit();
+
+                // TODO: fix this
+                Toast.makeText(this, "Got access token: " + oauthMap.get("access_token"), Toast.LENGTH_LONG).show();
+            } else {
+                // TODO: better error message
+                Toast.makeText(this, "Didn't get an access token!", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -115,11 +134,11 @@ public class HomeActivity extends Activity
             if( error != null ) {
                 // didn't actually work
                 Toast.makeText(this, "Authorization error!\n" + error_reason + "\n" +
-                        error_description , Toast.LENGTH_LONG).show();
-                Log.e(TAG, "OAuth access code error.");
-                Log.e(TAG, error);
-                Log.e(TAG, error_reason);
-                Log.e(TAG, error_description);
+                        error_description , Toast.LENGTH_SHORT).show();
+                Log.e(Constants.TAG, "OAuth access code error.");
+                Log.e(Constants.TAG, error);
+                Log.e(Constants.TAG, error_reason);
+                Log.e(Constants.TAG, error_description);
                 return null;
             } else {
                 return access_code;
@@ -129,8 +148,9 @@ public class HomeActivity extends Activity
         }
     }
 
-    private String requestAccessToken(String access_code) {
+    private Map<String,String> requestAccessToken(String access_code) {
         HttpResponse httpResponse;
+        HashMap<String,String> oauthMap = new HashMap<String,String>();
 
         HttpClient httpClient =  new MyHttpClient(getApplicationContext());
         HttpPost httpPost = new HttpPost(ACCESS_TOKEN_ENDPOINT);
@@ -150,18 +170,21 @@ public class HomeActivity extends Activity
             // test result code
             if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
                 Toast.makeText(this, "Authorization error", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Error requesting oauth access token.");
+                Log.e(Constants.TAG, "Error requesting oauth access token.");
                 return null;
             }
 
+        } catch( SSLException sslException ) {
+            Toast.makeText(this, "SSL exception.\nMost times, you can simply try again.", Toast.LENGTH_SHORT).show();
+            Log.e(Constants.TAG, "SSL exception.");
+            return null;
         } catch (IOException ioException) {
             Toast.makeText(this, "Authorization error", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Error requesting oauth access token.");
-            ioException.printStackTrace();
+            Log.e(Constants.TAG, "Error requesting oauth access token.");
             return null;
         }
 
-        Log.i(TAG, "Got access token response!");
+        Log.i(Constants.TAG, "Got access token response!");
 
         // parse JSON response
         try {
@@ -171,25 +194,25 @@ public class HomeActivity extends Activity
                 String json = reader.readLine();
                 JSONTokener jsonTokener = new JSONTokener(json);
                 JSONObject jsonObject = new JSONObject(jsonTokener);
-                Log.i(TAG,"JSON: " + jsonObject.toString());
-
-                String access_token = jsonObject.getString("access_token");
                 JSONObject userObject = jsonObject.getJSONObject("user");
-                String user_id = userObject.getString("id");
-                String username = userObject.getString("username");
-                String full_name = userObject.getString("full_name");
-                String profile_picture_url = userObject.getString("profile_picture");
 
-                return access_token;
+                // stash it in the return hashmap
+                oauthMap.put("access_token", jsonObject.getString("access_token"));
+                oauthMap.put("user_id", userObject.getString("id"));
+                oauthMap.put("username", userObject.getString("username"));
+                oauthMap.put("full_name", userObject.getString("full_name"));
+                oauthMap.put("profile_picture_url", userObject.getString("profile_picture"));
+
+                return oauthMap;
 
             }
         } catch( JSONException jsonException ) {
             Toast.makeText(this, "Error parsing authorization response.", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Error parsing oauth access token JSON response.");
+            Log.e(Constants.TAG, "Error parsing oauth access token JSON response.");
             return null;
         } catch( IOException ioException ) {
             Toast.makeText(this, "I/O error parsing authorization response.", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "I/O error parsing oauth access token JSON response.");
+            Log.e(Constants.TAG, "I/O error parsing oauth access token JSON response.");
             return null;
         }
 
