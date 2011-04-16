@@ -28,23 +28,25 @@
 
 package org.acmelab.andgram2;
 
+import java.util.ArrayList;
+
 /**
  * Created by IntelliJ IDEA.
  * User: mchang
- * Date: 4/16/11
- * Time: 12:32 AM
- * All them constat stuffs.
+ * Date: 3/25/11
+ * Time: 11:09 PM
+ * To change this template use File | Settings | File Templates.
  */
-public class Constants {
-    public static final String TAG = "ANDGRAM2";
-    public static final String PREFS_NAME = "andgram2_prefs";
+public class InstagramImage {
+    public String url = "";
+    public String username = "";
+    public String user_id = "";
+    public String full_name = "";
+    public String caption = "";
+    public String taken_at = "";
+    public String id = "";
+    public boolean liker_list_is_count = false;
 
-    public static final String AUTHORIZATION_URL = "https://api.instagram.com/oauth/authorize/";
-    public static final String ACCESS_TOKEN_ENDPOINT = "https://api.instagram.com/oauth/access_token";
-    public static final String REDIRECT_URI = "andgram://";
-
-    public static final String POPULAR_ENDPOINT = "https://api.instagram.com/v1/media/popular/";
-
-    public static final String OUTPUT_DIR = "andgram";
-
+    public ArrayList<String> liker_list;
+    public ArrayList<Comment> comment_list;
 }

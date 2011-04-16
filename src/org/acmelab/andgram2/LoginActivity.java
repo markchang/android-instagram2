@@ -85,6 +85,7 @@ public class LoginActivity extends Activity {
         authorizationUrl.append("&redirect_uri="+ Constants.REDIRECT_URI);
         authorizationUrl.append("&response_type=code");
         authorizationUrl.append("&display=touch");
+        authorizationUrl.append("&scope=likes+comments+relationships");
 
         return authorizationUrl.toString();
     }

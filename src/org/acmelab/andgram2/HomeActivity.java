@@ -38,6 +38,8 @@ import android.view.View;
 
 public class HomeActivity extends Activity
 {
+    String access_token = null;
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -47,12 +49,29 @@ public class HomeActivity extends Activity
         setContentView(R.layout.home_layout);
 
         // if no login data, prompt for login
-        SharedPreferences sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
-        String access_token = sharedPreferences.getString("access_token", null);
+        setAccessToken();
 
         if( access_token == null ) {
             // need to authenticate
             openLoginIntent(null);
+        }
+    }
+
+    public void setAccessToken() {
+        SharedPreferences sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        access_token = sharedPreferences.getString("access_token", null);
+    }
+
+
+    public void openPopularGridIntent(View view) {
+        if( access_token == null )
+            openLoginIntent(null);
+        else {
+            String popular_endpoint = Utils.decorateEndpoint(Constants.POPULAR_ENDPOINT, access_token);
+            Intent feedIntent = new Intent(HomeActivity.this, ImageGridActivity.class);
+            feedIntent.putExtra("endpoint", popular_endpoint);
+            feedIntent.putExtra("title", R.string.popular);
+            startActivity(feedIntent);
         }
     }
 

@@ -31,20 +31,16 @@ package org.acmelab.andgram2;
 /**
  * Created by IntelliJ IDEA.
  * User: mchang
- * Date: 4/16/11
- * Time: 12:32 AM
- * All them constat stuffs.
+ * Date: 3/29/11
+ * Time: 1:30 AM
+ * To change this template use File | Settings | File Templates.
  */
-public class Constants {
-    public static final String TAG = "ANDGRAM2";
-    public static final String PREFS_NAME = "andgram2_prefs";
+public class Comment {
+    public final String username;
+    public final String comment;
 
-    public static final String AUTHORIZATION_URL = "https://api.instagram.com/oauth/authorize/";
-    public static final String ACCESS_TOKEN_ENDPOINT = "https://api.instagram.com/oauth/access_token";
-    public static final String REDIRECT_URI = "andgram://";
-
-    public static final String POPULAR_ENDPOINT = "https://api.instagram.com/v1/media/popular/";
-
-    public static final String OUTPUT_DIR = "andgram";
-
+    public Comment(String _username, String _comment) {
+        this.username = _username;
+        this.comment = _comment;
+    }
 }
