@@ -68,7 +68,7 @@ public class PopularActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         Log.i(Constants.TAG, "PopularActivity onCreate");
-        setContentView(R.layout.image_grid);
+        setContentView(R.layout.popular_layout);
 
         Bundle extras = getIntent().getExtras();
         sourceUrl = extras.getString("endpoint");
