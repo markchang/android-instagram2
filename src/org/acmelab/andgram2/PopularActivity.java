@@ -54,7 +54,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class ImageGridActivity extends Activity {
+public class PopularActivity extends Activity {
 
     private String sourceUrl;
 
@@ -67,7 +67,7 @@ public class ImageGridActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.i(Constants.TAG, "ImageGridActivity onCreate");
+        Log.i(Constants.TAG, "PopularActivity onCreate");
         setContentView(R.layout.image_grid);
 
         Bundle extras = getIntent().getExtras();
@@ -128,13 +128,13 @@ public class ImageGridActivity extends Activity {
         }
 
         protected void onProgressUpdate(String... toastText) {
-            Toast.makeText(ImageGridActivity.this, toastText[0], Toast.LENGTH_SHORT).show();
+            Toast.makeText(PopularActivity.this, toastText[0], Toast.LENGTH_SHORT).show();
             Log.e(Constants.TAG, toastText[0]);
         }
 
         protected Boolean doInBackground(Void... voids) {
 
-            Log.i(Constants.TAG, "ImageGridActivity FETCH");
+            Log.i(Constants.TAG, "PopularActivity FETCH");
 
             HttpEntity httpEntity = null;
 

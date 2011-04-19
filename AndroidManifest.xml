@@ -23,7 +23,7 @@
                 <data android:scheme="andgram"/>
             </intent-filter>
         </activity>
-        <activity android:name=".ImageGridActivity"/>
+        <activity android:name=".PopularActivity"/>
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

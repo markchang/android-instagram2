@@ -32,7 +32,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.LoginFilter;
 import android.util.Log;
 import android.view.View;
 
@@ -70,7 +69,7 @@ public class HomeActivity extends Activity
             openLoginIntent(null);
         else {
             String popular_endpoint = Utils.decorateEndpoint(Constants.POPULAR_ENDPOINT, access_token);
-            Intent feedIntent = new Intent(HomeActivity.this, ImageGridActivity.class);
+            Intent feedIntent = new Intent(HomeActivity.this, PopularActivity.class);
             feedIntent.putExtra("endpoint", popular_endpoint);
             feedIntent.putExtra("title", R.string.popular);
             startActivity(feedIntent);

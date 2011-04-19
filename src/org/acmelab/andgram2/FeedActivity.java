@@ -67,7 +67,7 @@ public class FeedActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.i(Constants.TAG, "ImageGridActivity onCreate");
+        Log.i(Constants.TAG, "PopularActivity onCreate");
         setContentView(R.layout.image_grid);
 
         Bundle extras = getIntent().getExtras();
@@ -134,7 +134,7 @@ public class FeedActivity extends Activity {
 
         protected Boolean doInBackground(Void... voids) {
 
-            Log.i(Constants.TAG, "ImageGridActivity FETCH");
+            Log.i(Constants.TAG, "PopularActivity FETCH");
 
             HttpEntity httpEntity = null;
 
