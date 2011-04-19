@@ -153,10 +153,10 @@ public class LoginActivity extends Activity {
     }
 
     private Map<String,String> requestAccessToken(String access_code) {
-        HttpResponse httpResponse;
+        HttpResponse httpResponse = null;
+        HttpEntity httpEntity = null;
         HashMap<String,String> oauthMap = new HashMap<String,String>();
 
-        HttpClient httpClient =  new MyHttpClient(getApplicationContext());
         HttpPost httpPost = new HttpPost(Constants.ACCESS_TOKEN_ENDPOINT);
 
         List<NameValuePair> postParams = new ArrayList<NameValuePair>();
@@ -167,32 +167,42 @@ public class LoginActivity extends Activity {
         postParams.add(new BasicNameValuePair("code", access_code));
 
         // post it
-        try {
-            httpPost.setEntity(new UrlEncodedFormEntity(postParams));
-            httpResponse = httpClient.execute(httpPost);
+        boolean success = false;
+        int fail_count = 0;
+        while( success == false  ) {
+            try {
+                HttpClient httpClient = new MyHttpClient(getApplicationContext());
+                httpPost.setEntity(new UrlEncodedFormEntity(postParams));
+                httpResponse = httpClient.execute(httpPost);
 
-            // test result code
-            if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
+                // test result code
+                if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
+                    Toast.makeText(this, "Authorization error", Toast.LENGTH_SHORT).show();
+                    Log.e(Constants.TAG, "Error requesting oauth access token.");
+                    return null;
+                }
+
+                httpEntity = httpResponse.getEntity();
+                success = true;
+            } catch( SSLException sslException ) {
+                success = false;
+                fail_count++;
+                if( fail_count > 10 ) {
+                    Toast.makeText(this, "SSL exception.\nMost times, you can simply try again.", Toast.LENGTH_SHORT).show();
+                    Log.e(Constants.TAG, "SSL exception.");
+                    return null;
+                }
+            } catch (IOException ioException) {
                 Toast.makeText(this, "Authorization error", Toast.LENGTH_SHORT).show();
                 Log.e(Constants.TAG, "Error requesting oauth access token.");
                 return null;
             }
-
-        } catch( SSLException sslException ) {
-            Toast.makeText(this, "SSL exception.\nMost times, you can simply try again.", Toast.LENGTH_SHORT).show();
-            Log.e(Constants.TAG, "SSL exception.");
-            return null;
-        } catch (IOException ioException) {
-            Toast.makeText(this, "Authorization error", Toast.LENGTH_SHORT).show();
-            Log.e(Constants.TAG, "Error requesting oauth access token.");
-            return null;
         }
 
         Log.i(Constants.TAG, "Got access token response!");
 
         // parse JSON response
         try {
-            HttpEntity httpEntity = httpResponse.getEntity();
             if( httpEntity != null ) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(httpEntity.getContent(), "UTF-8"));
                 String json = reader.readLine();

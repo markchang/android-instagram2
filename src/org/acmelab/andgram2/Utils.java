@@ -54,7 +54,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Utils {
-    // url constants
+
+    public static String getAccessToken(Context ctx) {
+        SharedPreferences sharedPreferences = ctx.getSharedPreferences(Constants.PREFS_NAME, Activity.MODE_PRIVATE);
+        return(sharedPreferences.getString("access_token", null));
+    }
 
     public static boolean isOnline(Context ctx) {
         ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -89,7 +93,7 @@ public class Utils {
     }
 
 
-    public static String doRestulPut(MyHttpClient httpClient, String url,
+    public static String doRestfulPut(MyHttpClient httpClient, String url,
                                      List<NameValuePair> postParams, Context ctx) {
         // create POST
         HttpPost httpPost = new HttpPost(url);
@@ -133,47 +137,33 @@ public class Utils {
         }
     }
 
-    public static String doRestfulGet(DefaultHttpClient httpClient, String url, Context ctx) {
-        Log.i(Constants.TAG, "Image fetch");
-
+    public static JSONObject doRestfulGet(MyHttpClient httpClient, String url, Context ctx) {
         if( Utils.isOnline(ctx) == false ) {
             Toast.makeText(ctx,"No connection to Internet.\nTry again later",Toast.LENGTH_SHORT).show();
             Log.i(Constants.TAG, "No internet!");
             return null;
         }
 
-
+        // TODO: SSL retries
         try {
             HttpGet httpGet = new HttpGet(url);
             HttpResponse httpResponse = httpClient.execute(httpGet);
 
             // test result code
             if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
-                Toast.makeText(ctx, "Action failed.", Toast.LENGTH_SHORT).show();
                 Log.e(Constants.TAG, "Return status code bad.");
                 return null;
             }
 
-            // test json response
             HttpEntity httpEntity = httpResponse.getEntity();
+
             if( httpEntity != null ) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(httpEntity.getContent(), "UTF-8"));
                 String json = reader.readLine();
                 JSONTokener jsonTokener = new JSONTokener(json);
                 JSONObject jsonObject = new JSONObject(jsonTokener);
-                Log.i(Constants.TAG,"JSON: " + jsonObject.toString());
-
-                String loginStatus = jsonObject.getString("status");
-
-                if( !loginStatus.equals("ok") ) {
-                    Toast.makeText(ctx,"Network activity did not return ok",Toast.LENGTH_SHORT).show();
-                    Log.e(Constants.TAG, "JSON status not ok: " + jsonObject.getString("status"));
-                    return null;
-                } else {
-                    return json;
-                }
+                return jsonObject;
             } else {
-                Toast.makeText(ctx,"Improper data returned from Instagram",Toast.LENGTH_SHORT).show();
                 Log.e(Constants.TAG, "instagram returned bad data");
                 return null;
             }

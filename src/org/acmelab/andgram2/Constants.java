@@ -44,6 +44,7 @@ public class Constants {
     public static final String REDIRECT_URI = "andgram://";
 
     public static final String POPULAR_ENDPOINT = "https://api.instagram.com/v1/media/popular/";
+    public static final String USER_FEED_ENDPOINT = "https://api.instagram.com/v1/users/self/feed";
 
     public static final String OUTPUT_DIR = "andgram";
 

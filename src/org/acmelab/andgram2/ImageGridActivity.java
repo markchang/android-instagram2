@@ -29,6 +29,7 @@
 package org.acmelab.andgram2;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -77,6 +78,14 @@ public class ImageGridActivity extends Activity {
 
         actionBar = (ActionBar) findViewById(R.id.actionbar);
         actionBar.setTitle(title);
+
+        Intent homeIntent = new Intent(getApplicationContext(), HomeActivity.class);
+        homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        actionBar.addAction(new RefreshAction());
+        final ActionBar.Action goHomeAction = new ActionBar.IntentAction(this,
+                homeIntent, R.drawable.ic_title_home);
+        actionBar.addAction(goHomeAction);
 
         // set that list to background downloader
         instagramImageList = new ArrayList<InstagramImage>();
@@ -148,7 +157,6 @@ public class ImageGridActivity extends Activity {
                         return false;
                     }
 
-                    // test json response
                     httpEntity = httpResponse.getEntity();
                     success = true;
                 } catch( SSLException sslException ) {

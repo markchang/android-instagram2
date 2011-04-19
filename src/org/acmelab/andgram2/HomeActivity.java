@@ -49,10 +49,9 @@ public class HomeActivity extends Activity
         setContentView(R.layout.home_layout);
 
         // if no login data, prompt for login
-        setAccessToken();
+        access_token = Utils.getAccessToken(this);
 
         if( access_token == null ) {
-            // need to authenticate
             openLoginIntent(null);
         }
     }
@@ -65,7 +64,7 @@ public class HomeActivity extends Activity
 
     public void openPopularGridIntent(View view) {
         // if no login data, prompt for login
-        setAccessToken();
+        access_token = Utils.getAccessToken(this);;
 
         if( access_token == null )
             openLoginIntent(null);
