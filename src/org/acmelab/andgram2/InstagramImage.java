@@ -38,14 +38,21 @@ import java.util.ArrayList;
  * To change this template use File | Settings | File Templates.
  */
 public class InstagramImage {
-    public String url = "";
-    public String username = "";
-    public String user_id = "";
+    public String thumbnail;
+    public String low_resolution;
+    public String standard_resolution;
+    public String permalink;
+    public String username;
+    public String user_id;
     public String full_name = "";
     public String caption = "";
-    public String taken_at = "";
-    public String id = "";
-    public boolean liker_list_is_count = false;
+    public String taken_at;
+    public String id;
+
+    public boolean user_has_liked;
+
+    public int liker_count;
+    public int comment_count;
 
     public ArrayList<String> liker_list;
     public ArrayList<Comment> comment_list;

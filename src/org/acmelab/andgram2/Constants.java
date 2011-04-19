@@ -45,6 +45,9 @@ public class Constants {
 
     public static final String POPULAR_ENDPOINT = "https://api.instagram.com/v1/media/popular/";
     public static final String USER_FEED_ENDPOINT = "https://api.instagram.com/v1/users/self/feed";
+    public static final String MEDIA_ENDPOINT = "https://api.instagram.com/v1/media/";
+    public static final String LIKE_MEDIA_ENDPOINT = "/likes/";
+    public static final String COMMENT_MEDIA_ENDPOINT = "/comments";
 
     public static final String OUTPUT_DIR = "andgram";
 

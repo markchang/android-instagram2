@@ -27,25 +27,40 @@
   ~ or implied, of Mark L. Chang.
   -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
-
-    <com.markupartist.android.widget.ActionBar
-        android:id="@+id/popularActionbar"
-        style="@style/ActionBar"
+    android:layout_height="wrap_content">
+    <TextView
+        android:id="@+id/username"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|center_vertical"
+        android:textSize="14dip"
+        android:layout_marginLeft="10dip"/>
+    <ImageView
+        android:id="@+id/image"
+        android:layout_weight="1"
+        android:src="@drawable/stub"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:scaleType="centerInside"
+        android:adjustViewBounds="true"
         />
-
-    <GridView xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/gridview"
-              android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
-              android:numColumns="auto_fit"
-              android:verticalSpacing="0dp"
-              android:horizontalSpacing="0dp"
-              android:columnWidth="75dp"
-              android:stretchMode="columnWidth"
-              android:gravity="center"
-            />
+    <TextView
+        android:id="@+id/caption"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|center_vertical"
+        android:textSize="12dip"
+        android:layout_marginLeft="10dip"/>
+    <TextView
+        android:id="@+id/comments"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|center_vertical"
+        android:textSize="12dip"
+        android:layout_marginLeft="10dip"/>
 </LinearLayout>
+

@@ -7,7 +7,7 @@
         android:layout_height="fill_parent"
         >
     <com.markupartist.android.widget.ActionBar
-            android:id="@+id/dashboardActionbar"
+            android:id="@+id/homeActionbar"
             style="@style/ActionBar"
             app:title="@string/app_name"
             />

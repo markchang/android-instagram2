@@ -29,18 +29,24 @@
 package org.acmelab.andgram2;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.GridView;
+import android.widget.AdapterView;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 import com.markupartist.android.widget.ActionBar;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -53,30 +59,31 @@ import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class FeedActivity extends Activity {
-
+    private static final boolean debug = true;
     private String sourceUrl;
 
-    GridView grid;
-    LazyGridAdapter adapter;
+    ListView feedList;
+    LazyListAdapter adapter;
     ArrayList<InstagramImage> instagramImageList;
     ActionBar actionBar;
+    MyHttpClient httpClient;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.i(Constants.TAG, "PopularActivity onCreate");
-        setContentView(R.layout.popular_layout);
+        if(debug) Log.i(Constants.TAG, "FeedActivity onCreate");
+        setContentView(R.layout.feed_layout);
 
         Bundle extras = getIntent().getExtras();
         sourceUrl = extras.getString("endpoint");
-        grid = (GridView)findViewById(R.id.gridview);
         int titleId = extras.getInt("title");
         String title = getResources().getString(titleId);
 
-        actionBar = (ActionBar) findViewById(R.id.actionbar);
+        actionBar = (ActionBar) findViewById(R.id.feedActionbar);
         actionBar.setTitle(title);
 
         Intent homeIntent = new Intent(getApplicationContext(), HomeActivity.class);
@@ -87,10 +94,13 @@ public class FeedActivity extends Activity {
                 homeIntent, R.drawable.ic_title_home);
         actionBar.addAction(goHomeAction);
 
+        feedList = (ListView)findViewById(R.id.feedList);
+        feedList.setOnItemClickListener(itemClickListener);
+
         // set that list to background downloader
         instagramImageList = new ArrayList<InstagramImage>();
-        adapter = new LazyGridAdapter(this, instagramImageList);
-        grid.setAdapter(adapter);
+        adapter = new LazyListAdapter(this, instagramImageList);
+        feedList.setAdapter(adapter);
         new FetchActivity().execute();
     }
 
@@ -105,7 +115,7 @@ public class FeedActivity extends Activity {
     public void onDestroy()
     {
         adapter.imageLoader.stopThread();
-        grid.setAdapter(null);
+        feedList.setAdapter(null);
         super.onDestroy();
     }
 
@@ -129,12 +139,12 @@ public class FeedActivity extends Activity {
 
         protected void onProgressUpdate(String... toastText) {
             Toast.makeText(FeedActivity.this, toastText[0], Toast.LENGTH_SHORT).show();
-            Log.e(Constants.TAG, toastText[0]);
+            if(debug) Log.e(Constants.TAG, toastText[0]);
         }
 
         protected Boolean doInBackground(Void... voids) {
 
-            Log.i(Constants.TAG, "PopularActivity FETCH");
+            if(debug) Log.i(Constants.TAG, "PopularActivity FETCH");
 
             HttpEntity httpEntity = null;
 
@@ -147,7 +157,7 @@ public class FeedActivity extends Activity {
             int fail_count = 0;
             while( success == false  ) {
                 try {
-                    MyHttpClient httpClient = new MyHttpClient(getApplicationContext());
+                    httpClient = new MyHttpClient(getApplicationContext());
                     HttpGet httpGet = new HttpGet(sourceUrl);
                     HttpResponse httpResponse = httpClient.execute(httpGet);
 
@@ -160,7 +170,7 @@ public class FeedActivity extends Activity {
                     httpEntity = httpResponse.getEntity();
                     success = true;
                 } catch( SSLException sslException ) {
-                    Log.e(Constants.TAG, "SSL Exception: " + fail_count);
+                    if(debug) Log.e(Constants.TAG, "SSL Exception: " + fail_count);
                     success = false;
                     fail_count++;
                     if( fail_count > 10 ) {
@@ -190,9 +200,24 @@ public class FeedActivity extends Activity {
 
                         // image
                         JSONObject image = (JSONObject)data.get(i);
-                        JSONObject thumbnailImage = image.getJSONObject("images").getJSONObject("thumbnail");
-                        instagramImage.url = thumbnailImage.getString("url");
+                        JSONObject images = image.getJSONObject("images");
+                        JSONObject thumbnailImage = images.getJSONObject("thumbnail");
+                        JSONObject lowResolutionImage = images.getJSONObject("low_resolution");
+                        JSONObject standardResolutionImage = images.getJSONObject("standard_resolution");
                         instagramImage.id = image.getString("id");
+                        instagramImage.permalink = image.getString("link");
+
+                        // TODO: undo when instagram fixes
+                        try {
+                            instagramImage.user_has_liked = image.getBoolean("user_has_liked");
+                        } catch( JSONException je ) {
+                            instagramImage.user_has_liked = true;
+                        }
+
+                        // permalinks
+                        instagramImage.thumbnail = thumbnailImage.getString("url");
+                        instagramImage.low_resolution = lowResolutionImage.getString("url");
+                        instagramImage.standard_resolution = standardResolutionImage.getString("url");
 
                         // user
                         JSONObject user = image.getJSONObject("user");
@@ -206,6 +231,7 @@ public class FeedActivity extends Activity {
                         instagramImage.taken_at = formatter.format(new Date(dateLong * 1000L));
 
                         // comments
+                        instagramImage.comment_count = image.getJSONObject("comments").getInt("count");
                         JSONArray comments = image.getJSONObject("comments").getJSONArray("data");
                         if( comments != null ) {
                             ArrayList<Comment> commentList = new ArrayList<Comment>();
@@ -229,20 +255,16 @@ public class FeedActivity extends Activity {
 
                         // likers
                         try {
+                            instagramImage.liker_count = image.getJSONObject("likes").getInt("count");
                             JSONArray likes = image.getJSONObject("likes").getJSONArray("data");
                             if( likes != null ) {
                                 ArrayList<String> likerList = new ArrayList<String>();
-                                StringBuilder likerString = new StringBuilder();
                                 if( likes.length() > 0 ) {
-                                    likerString.append("Liked by: <b>");
                                     for( int l=0; l < likes.length(); l++ ) {
                                         JSONObject like = likes.getJSONObject(l);
-                                        likerString.append(like.getString("username") + " ");
                                         likerList.add(like.getString("username"));
                                     }
-                                    likerString.append("</b>");
                                     instagramImage.liker_list = likerList;
-                                    instagramImage.liker_list_is_count = false;
                                 }
                             }
                         } catch( JSONException j ) {}
@@ -253,7 +275,7 @@ public class FeedActivity extends Activity {
                     return true;
                 } else {
                     publishProgress("Improper data returned from Instagram");
-                    Log.e(Constants.TAG, "instagram returned bad data");
+                    if(debug) Log.e(Constants.TAG, "instagram returned bad data");
                     return false;
                 }
             } catch (Exception e) {
@@ -262,6 +284,157 @@ public class FeedActivity extends Activity {
             }
         }
     }
+
+    public AdapterView.OnItemClickListener itemClickListener = new AdapterView.OnItemClickListener() {
+        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            if(debug) Log.i(Constants.TAG, "Clicked: " + String.valueOf(i));
+
+            final InstagramImage instagramImage = (InstagramImage)adapter.getItem(i);
+
+            // build dialog
+            List<String> dialogItems = new ArrayList<String>();
+
+            // 0: like/unlike
+            if( instagramImage.user_has_liked == true ) {
+                dialogItems.add("Unlike");
+            } else {
+                dialogItems.add("Like");
+            }
+
+            // 1: comment
+            dialogItems.add("Comment");
+
+            // 2: share
+            dialogItems.add("Share");
+
+            final CharSequence[] items = dialogItems.toArray(new String[dialogItems.size()]);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(FeedActivity.this);
+            builder.setTitle("Choose your action");
+            builder.setItems(items, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int item) {
+                    switch(item) {
+                        case 0:
+                            likeUnlike(instagramImage);
+                            break;
+                        case 1:
+                            showCommentDialog(instagramImage);
+                            break;
+                        case 2:
+                            showShareDialog(instagramImage);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            });
+            AlertDialog alert = builder.create();
+            alert.show();
+
+        }
+    };
+
+    public void showShareDialog(InstagramImage image) {
+        // shoot the intent
+        // will default to "messaging / sms" if nothing else is installed
+        Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+        //Text seems to be necessary for Facebook and Twitter
+        sharingIntent.setType("text/plain");
+        sharingIntent.putExtra(Intent.EXTRA_TEXT, image.caption + " " + image.permalink);
+        startActivity(Intent.createChooser(sharingIntent,"Share using"));
+    }
+
+    public void showCommentDialog(InstagramImage image) {
+        final InstagramImage finalImage = image;
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+
+        alert.setTitle("Comment");
+
+        // Set an EditText view to get user input
+        final EditText input = new EditText(this);
+        alert.setView(input);
+
+        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                String comment = input.getText().toString();
+                postComment(comment, finalImage);
+            }
+        });
+
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                // Canceled.
+            }
+        });
+
+        alert.show();
+    }
+
+    public void postComment(String comment, InstagramImage image) {
+        List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+        postParams.add(new BasicNameValuePair("text", comment));
+        postParams.add(new BasicNameValuePair("access_token", Utils.getAccessToken(getApplicationContext())));
+        String url = Constants.MEDIA_ENDPOINT + image.id + Constants.COMMENT_MEDIA_ENDPOINT;
+
+
+        JSONObject jsonResponse = Utils.doRestfulPut(httpClient,
+                url,
+                postParams,
+                this);
+        if( jsonResponse != null ) {
+            image.comment_list.add(new Comment(Utils.getUsername(getApplicationContext()),comment));
+            Toast.makeText(this,
+                    "Comment successful", Toast.LENGTH_SHORT).show();
+            adapter.notifyDataSetChanged();
+        } else {
+            Toast.makeText(this,
+                    "Comment failed", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void likeUnlike(InstagramImage image) {
+        if( image.user_has_liked == true ) {
+            unlike(image);
+        } else {
+            like(image);
+        }
+    }
+
+    public void like(InstagramImage image) {
+        List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+        postParams.add(new BasicNameValuePair("access_token", Utils.getAccessToken(getApplicationContext())));
+
+        String url = Constants.MEDIA_ENDPOINT + image.id + Constants.LIKE_MEDIA_ENDPOINT;
+
+        JSONObject jsonResponse = Utils.doRestfulPut(httpClient,
+                url,
+                postParams,
+                this);
+        if( jsonResponse != null ) {
+            if( image.liker_list == null ) image.liker_list = new ArrayList<String>();
+            image.liker_list.add(Utils.getUsername(getApplicationContext()));
+            image.liker_count++;
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    public void unlike(InstagramImage image) {
+        List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+        postParams.add(new BasicNameValuePair("access_token", Utils.getAccessToken(getApplicationContext())));
+
+        String url = Constants.MEDIA_ENDPOINT + image.id + Constants.LIKE_MEDIA_ENDPOINT;
+        String access_url = Utils.decorateEndpoint(url, Utils.getAccessToken(getApplicationContext()));
+
+        JSONObject jsonResponse = Utils.doRestfulDelete(httpClient, access_url, this);
+
+        if( jsonResponse != null ) {
+            image.liker_list.remove(Utils.getUsername(getApplicationContext()));
+            image.liker_count--;
+            adapter.notifyDataSetChanged();
+        }
+    }
+
 
     private class RefreshAction implements ActionBar.Action {
 

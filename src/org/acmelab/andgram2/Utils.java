@@ -40,6 +40,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -93,18 +94,18 @@ public class Utils {
     }
 
 
-    public static String doRestfulPut(MyHttpClient httpClient, String url,
+    public static JSONObject doRestfulPut(MyHttpClient httpClient, String url,
                                      List<NameValuePair> postParams, Context ctx) {
-        // create POST
         HttpPost httpPost = new HttpPost(url);
 
+        // TODO: SSL retries
         try {
             httpPost.setEntity(new UrlEncodedFormEntity(postParams, HTTP.UTF_8));
             HttpResponse httpResponse = httpClient.execute(httpPost);
 
             // test result code
             if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
-                Log.i(Constants.TAG, "Login HTTP status fail");
+                Log.e(Constants.TAG, "Login HTTP status fail");
                 return null;
             }
 
@@ -115,24 +116,14 @@ public class Utils {
                 String json = reader.readLine();
                 JSONTokener jsonTokener = new JSONTokener(json);
                 JSONObject jsonObject = new JSONObject(jsonTokener);
-                Log.i(Constants.TAG,"JSON: " + jsonObject.toString());
 
-                String loginStatus = jsonObject.getString("status");
-
-                if( !loginStatus.equals("ok") ) {
-                    Log.e(Constants.TAG, "JSON status not ok: " + jsonObject.getString("status"));
-                    return null;
-                } else {
-                    return json;
-                }
+                return jsonObject;
             } else {
                 return null;
             }
         } catch( IOException e ) {
-            Log.e(Constants.TAG, "HttpPost error: " + e.toString());
             return null;
         } catch( JSONException e ) {
-            Log.e(Constants.TAG, "JSON parse error: " + e.toString());
             return null;
         }
     }
@@ -151,7 +142,6 @@ public class Utils {
 
             // test result code
             if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
-                Log.e(Constants.TAG, "Return status code bad.");
                 return null;
             }
 
@@ -164,7 +154,6 @@ public class Utils {
                 JSONObject jsonObject = new JSONObject(jsonTokener);
                 return jsonObject;
             } else {
-                Log.e(Constants.TAG, "instagram returned bad data");
                 return null;
             }
         } catch (Exception e) {
@@ -173,4 +162,37 @@ public class Utils {
         }
     }
 
+    public static JSONObject doRestfulDelete(MyHttpClient httpClient, String url, Context ctx) {
+        if( Utils.isOnline(ctx) == false ) {
+            Toast.makeText(ctx,"No connection to Internet.\nTry again later",Toast.LENGTH_SHORT).show();
+            Log.i(Constants.TAG, "No internet!");
+            return null;
+        }
+
+        // TODO: SSL retries
+        try {
+            HttpDelete httpDelete = new HttpDelete(url);
+            HttpResponse httpResponse = httpClient.execute(httpDelete);
+
+            // test result code
+            if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
+                return null;
+            }
+
+            HttpEntity httpEntity = httpResponse.getEntity();
+
+            if( httpEntity != null ) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(httpEntity.getContent(), "UTF-8"));
+                String json = reader.readLine();
+                JSONTokener jsonTokener = new JSONTokener(json);
+                JSONObject jsonObject = new JSONObject(jsonTokener);
+                return jsonObject;
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

@@ -45,6 +45,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import sun.org.mozilla.javascript.internal.JavaScriptException;
 
 import javax.net.ssl.SSLException;
 import java.io.BufferedReader;
@@ -55,6 +56,8 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class PopularActivity extends Activity {
+
+    private static final boolean debug = true;
 
     private String sourceUrl;
 
@@ -67,7 +70,7 @@ public class PopularActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.i(Constants.TAG, "PopularActivity onCreate");
+        if(debug) Log.i(Constants.TAG, "PopularActivity onCreate");
         setContentView(R.layout.popular_layout);
 
         Bundle extras = getIntent().getExtras();
@@ -76,7 +79,7 @@ public class PopularActivity extends Activity {
         int titleId = extras.getInt("title");
         String title = getResources().getString(titleId);
 
-        actionBar = (ActionBar) findViewById(R.id.actionbar);
+        actionBar = (ActionBar) findViewById(R.id.popularActionbar);
         actionBar.setTitle(title);
 
         Intent homeIntent = new Intent(getApplicationContext(), HomeActivity.class);
@@ -87,7 +90,7 @@ public class PopularActivity extends Activity {
                 homeIntent, R.drawable.ic_title_home);
         actionBar.addAction(goHomeAction);
 
-        // set that list to background downloader
+        // set that feedList to background downloader
         instagramImageList = new ArrayList<InstagramImage>();
         adapter = new LazyGridAdapter(this, instagramImageList);
         grid.setAdapter(adapter);
@@ -129,12 +132,12 @@ public class PopularActivity extends Activity {
 
         protected void onProgressUpdate(String... toastText) {
             Toast.makeText(PopularActivity.this, toastText[0], Toast.LENGTH_SHORT).show();
-            Log.e(Constants.TAG, toastText[0]);
+            if(debug) Log.e(Constants.TAG, toastText[0]);
         }
 
         protected Boolean doInBackground(Void... voids) {
 
-            Log.i(Constants.TAG, "PopularActivity FETCH");
+            if(debug) Log.i(Constants.TAG, "PopularActivity FETCH");
 
             HttpEntity httpEntity = null;
 
@@ -160,7 +163,7 @@ public class PopularActivity extends Activity {
                     httpEntity = httpResponse.getEntity();
                     success = true;
                 } catch( SSLException sslException ) {
-                    Log.e(Constants.TAG, "SSL Exception: " + fail_count);
+                    if(debug) Log.e(Constants.TAG, "SSL Exception: " + fail_count);
                     success = false;
                     fail_count++;
                     if( fail_count > 10 ) {
@@ -190,9 +193,18 @@ public class PopularActivity extends Activity {
 
                         // image
                         JSONObject image = (JSONObject)data.get(i);
-                        JSONObject thumbnailImage = image.getJSONObject("images").getJSONObject("thumbnail");
-                        instagramImage.url = thumbnailImage.getString("url");
+                        JSONObject images = image.getJSONObject("images");
+                        JSONObject thumbnailImage = images.getJSONObject("thumbnail");
+                        JSONObject lowResolutionImage = images.getJSONObject("low_resolution");
+                        JSONObject standardResolutionImage = images.getJSONObject("standard_resolution");
                         instagramImage.id = image.getString("id");
+                        instagramImage.user_has_liked = image.getBoolean("user_has_liked");
+                        instagramImage.permalink = image.getString("link");
+
+                        // permalinks
+                        instagramImage.thumbnail = thumbnailImage.getString("url");
+                        instagramImage.low_resolution = lowResolutionImage.getString("url");
+                        instagramImage.standard_resolution = standardResolutionImage.getString("url");
 
                         // user
                         JSONObject user = image.getJSONObject("user");
@@ -206,6 +218,7 @@ public class PopularActivity extends Activity {
                         instagramImage.taken_at = formatter.format(new Date(dateLong * 1000L));
 
                         // comments
+                        instagramImage.comment_count = image.getJSONObject("comments").getInt("count");
                         JSONArray comments = image.getJSONObject("comments").getJSONArray("data");
                         if( comments != null ) {
                             ArrayList<Comment> commentList = new ArrayList<Comment>();
@@ -229,20 +242,16 @@ public class PopularActivity extends Activity {
 
                         // likers
                         try {
+                            instagramImage.liker_count = image.getJSONObject("likes").getInt("count");
                             JSONArray likes = image.getJSONObject("likes").getJSONArray("data");
                             if( likes != null ) {
                                 ArrayList<String> likerList = new ArrayList<String>();
-                                StringBuilder likerString = new StringBuilder();
                                 if( likes.length() > 0 ) {
-                                    likerString.append("Liked by: <b>");
                                     for( int l=0; l < likes.length(); l++ ) {
                                         JSONObject like = likes.getJSONObject(l);
-                                        likerString.append(like.getString("username") + " ");
                                         likerList.add(like.getString("username"));
                                     }
-                                    likerString.append("</b>");
                                     instagramImage.liker_list = likerList;
-                                    instagramImage.liker_list_is_count = false;
                                 }
                             }
                         } catch( JSONException j ) {}
@@ -253,7 +262,7 @@ public class PopularActivity extends Activity {
                     return true;
                 } else {
                     publishProgress("Improper data returned from Instagram");
-                    Log.e(Constants.TAG, "instagram returned bad data");
+                    if(debug) Log.e(Constants.TAG, "instagram returned bad data");
                     return false;
                 }
             } catch (Exception e) {

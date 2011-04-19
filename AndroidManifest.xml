@@ -24,6 +24,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".PopularActivity"/>
+        <activity android:name=".FeedActivity"/>
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

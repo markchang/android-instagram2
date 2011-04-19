@@ -41,7 +41,7 @@ import java.net.URL;
 import java.util.*;
 
 public class ImageLoader {
-    private static final boolean debug = true;
+    private static final boolean debug = false;
 
     // the simplest in-memory cache implementation.
     // This should be replaced with something like SoftReference or
@@ -177,7 +177,7 @@ public class ImageLoader {
         photoLoaderThread.interrupt();
     }
 
-    // stores list of photos to download
+    // stores feedList of photos to download
     class PhotosQueue
     {
         // private Stack<PhotoToLoad> photosToLoad = new Stack<PhotoToLoad>();

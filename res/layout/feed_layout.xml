@@ -33,19 +33,13 @@
     android:layout_height="fill_parent">
 
     <com.markupartist.android.widget.ActionBar
-        android:id="@+id/popularActionbar"
+        android:id="@+id/feedActionbar"
         style="@style/ActionBar"
         />
 
-    <GridView xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/gridview"
-              android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
-              android:numColumns="auto_fit"
-              android:verticalSpacing="0dp"
-              android:horizontalSpacing="0dp"
-              android:columnWidth="75dp"
-              android:stretchMode="columnWidth"
-              android:gravity="center"
-            />
+    <ListView
+        android:id="@+id/feedList"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" 
+        android:layout_weight="1"/>
 </LinearLayout>

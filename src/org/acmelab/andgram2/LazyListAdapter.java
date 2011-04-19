@@ -30,24 +30,24 @@ package org.acmelab.andgram2;
 
 import android.app.Activity;
 import android.content.Context;
-import android.util.Log;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 
-public class LazyGridAdapter extends BaseAdapter {
-    private static final boolean debug = false;
+public class LazyListAdapter extends BaseAdapter {
+
     private Activity activity;
     private ArrayList<InstagramImage> instagramImageArrayList;
-    private static LayoutInflater inflater = null;
+    private static LayoutInflater inflater=null;
     public ImageLoader imageLoader;
 
-    public LazyGridAdapter(Activity a, ArrayList<InstagramImage> i) {
+    public LazyListAdapter(Activity a, ArrayList<InstagramImage> i) {
         activity = a;
         instagramImageArrayList = i;
         inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -66,24 +66,67 @@ public class LazyGridAdapter extends BaseAdapter {
         return position;
     }
 
+    public static class ViewHolder{
+        public TextView username;
+        public TextView comments;
+        public TextView caption;
+        public ImageView image;
+    }
+
     public View getView(int position, View convertView, ViewGroup parent) {
-        if(debug) Log.i(Constants.TAG, "Getting grid view " + Integer.toString(position));
-        ImageView imageView;
-        if (convertView == null) {  // if it's not recycled, initialize some attributes
-            if(debug) Log.i(Constants.TAG, "Creating view for the first time");
-            final int imageDim = (int) (75 * activity.getResources().getDisplayMetrics().density + 0.5f );
-            imageView = new ImageView(activity);
-            imageView.setLayoutParams(new GridView.LayoutParams(imageDim, imageDim));
-            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            imageView.setPadding(0, 0, 0, 0);
-        } else {
-            if(debug) Log.i(Constants.TAG, "Got a view");
-            imageView = (ImageView) convertView;
+        View vi = convertView;
+        ViewHolder holder;
+        if(convertView == null){
+            vi = inflater.inflate(R.layout.feed_list_item, null);
+            holder = new ViewHolder();
+            holder.image = (ImageView)vi.findViewById(R.id.image);
+            holder.username = (TextView)vi.findViewById(R.id.username);
+            holder.comments = (TextView)vi.findViewById(R.id.comments);
+            holder.caption = (TextView)vi.findViewById(R.id.caption);
+            vi.setTag(holder);
         }
+        else
+            holder = (ViewHolder)vi.getTag();
 
         InstagramImage image = instagramImageArrayList.get(position);
-        imageView.setTag(image.thumbnail);
-        imageLoader.DisplayImage(image.thumbnail, activity, imageView);
-        return imageView;
+
+        holder.image.setTag(image.standard_resolution);
+        holder.username.setText(Html.fromHtml("<b>" + image.username + "</b> ") +
+            image.taken_at);
+        holder.caption.setText(Html.fromHtml("<b>" + image.username + "</b> " + image.caption));
+
+        // comments hold likes and comments
+        StringBuilder likerString = new StringBuilder();
+
+        if( image.liker_list != null ) {
+            if( image.liker_list.size() > 0 ) {
+                likerString.append("Liked by <b>");
+                for( String liker : image.liker_list ) {
+                    likerString.append(" " + liker);
+                }
+                likerString.append("</b>");
+                if( image.liker_list.size() < image.liker_count ) {
+                    int others_count = image.liker_count - image.liker_list.size();
+                    likerString.append(" and " + Integer.toString(others_count) + " others");
+                }
+                likerString.append("</b><br />");
+            }
+        }
+
+        // iterate over comments
+        if( image.comment_list != null ) {
+            if( image.comment_list.size() > 0 ) {
+                for( Comment comment : image.comment_list ) {
+                    likerString.append("<b>" + comment.username + "</b> ");
+                    likerString.append(comment.comment + "<br />");
+                }
+            }
+        }
+
+        holder.comments.setText(Html.fromHtml(likerString.toString()));
+
+        imageLoader.DisplayImage(image.standard_resolution, activity, holder.image);
+
+        return vi;
     }
 }
