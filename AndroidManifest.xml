@@ -25,6 +25,7 @@
         </activity>
         <activity android:name=".PopularActivity"/>
         <activity android:name=".FeedActivity"/>
+        <activity android:name=".ImageDetailActivity"/>
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

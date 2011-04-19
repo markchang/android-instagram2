@@ -79,10 +79,10 @@ public class LazyListAdapter extends BaseAdapter {
         if(convertView == null){
             vi = inflater.inflate(R.layout.feed_list_item, null);
             holder = new ViewHolder();
-            holder.image = (ImageView)vi.findViewById(R.id.image);
-            holder.username = (TextView)vi.findViewById(R.id.username);
-            holder.comments = (TextView)vi.findViewById(R.id.comments);
-            holder.caption = (TextView)vi.findViewById(R.id.caption);
+            holder.image = (ImageView)vi.findViewById(R.id.feed_image);
+            holder.username = (TextView)vi.findViewById(R.id.feed_username);
+            holder.comments = (TextView)vi.findViewById(R.id.feed_comments);
+            holder.caption = (TextView)vi.findViewById(R.id.feed_caption);
             vi.setTag(holder);
         }
         else

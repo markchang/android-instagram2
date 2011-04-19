@@ -40,6 +40,7 @@
     <string name="feed">Feed</string>
     <string name="popular">Popular</string>
     <string name="userfeed">Your feed</string>
+    <string name="image_detail">Image Details</string>
     <string name="empty">empty</string>
 
     <string name="dashboard">Dashboard</string>

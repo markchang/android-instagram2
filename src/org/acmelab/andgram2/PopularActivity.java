@@ -34,6 +34,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.Toast;
 import com.markupartist.android.widget.ActionBar;
@@ -45,7 +46,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import sun.org.mozilla.javascript.internal.JavaScriptException;
+import sun.awt.image.ImageDecoder;
 
 import javax.net.ssl.SSLException;
 import java.io.BufferedReader;
@@ -79,7 +80,7 @@ public class PopularActivity extends Activity {
         int titleId = extras.getInt("title");
         String title = getResources().getString(titleId);
 
-        actionBar = (ActionBar) findViewById(R.id.popularActionbar);
+        actionBar = (ActionBar) findViewById(R.id.popular_actionbar);
         actionBar.setTitle(title);
 
         Intent homeIntent = new Intent(getApplicationContext(), HomeActivity.class);
@@ -94,6 +95,17 @@ public class PopularActivity extends Activity {
         instagramImageList = new ArrayList<InstagramImage>();
         adapter = new LazyGridAdapter(this, instagramImageList);
         grid.setAdapter(adapter);
+
+        // make a click listener
+        grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                InstagramImage imageToShow = instagramImageList.get(position);
+                Intent imageDetailIntent = new Intent(PopularActivity.this, ImageDetailActivity.class);
+                imageDetailIntent.putExtra("id", imageToShow.id);
+                startActivity(imageDetailIntent);
+            }
+        });
+
         new FetchActivity().execute();
     }
 

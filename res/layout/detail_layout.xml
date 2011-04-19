@@ -32,15 +32,21 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content">
+
+    <com.markupartist.android.widget.ActionBar
+        android:id="@+id/detail_actionbar"
+        style="@style/ActionBar"
+        />
+
     <TextView
-        android:id="@+id/feed_username"
+        android:id="@+id/detail_username"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="left|center_vertical"
         android:textSize="14dip"
         android:layout_marginLeft="10dip"/>
     <ImageView
-        android:id="@+id/feed_image"
+        android:id="@+id/detail_image"
         android:layout_weight="1"
         android:src="@drawable/stub"
         android:layout_width="fill_parent"
@@ -49,14 +55,14 @@
         android:adjustViewBounds="true"
         />
     <TextView
-        android:id="@+id/feed_caption"
+        android:id="@+id/detail_caption"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="left|center_vertical"
         android:textSize="12dip"
         android:layout_marginLeft="10dip"/>
     <TextView
-        android:id="@+id/feed_comments"
+        android:id="@+id/detail_comments"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="left|center_vertical"

@@ -33,7 +33,7 @@
     android:layout_height="fill_parent">
 
     <com.markupartist.android.widget.ActionBar
-        android:id="@+id/popularActionbar"
+        android:id="@+id/popular_actionbar"
         style="@style/ActionBar"
         />
 
