@@ -38,10 +38,10 @@ import android.widget.ImageView;
 import java.io.*;
 import java.lang.ref.SoftReference;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Stack;
+import java.util.*;
 
 public class ImageLoader {
+    private static final boolean debug = true;
 
     // the simplest in-memory cache implementation.
     // This should be replaced with something like SoftReference or
@@ -66,27 +66,27 @@ public class ImageLoader {
 
     public void DisplayImage(String url, Activity activity, ImageView imageView)
     {
-        Log.i(Constants.TAG, "Displaying image: " + url);
+        if(debug) Log.i(Constants.TAG, "Displaying image: " + url);
         if(cache.containsKey(url)) {
-            Log.i(Constants.TAG, "Found cached image " + url);
+            if(debug) Log.i(Constants.TAG, "Found cached image " + url);
             SoftReference<Bitmap> softRef = cache.get(url);
             Bitmap bitmap = softRef.get();
             if( bitmap == null ) {
-                Log.i(Constants.TAG, "But re-queuing GC'ed image: " + url);
+                if(debug) Log.i(Constants.TAG, "But re-queuing GC'ed image: " + url);
                 // maybe? : cache.remove(softRef);
                 queuePhoto(url, activity, imageView);
                 imageView.setImageResource(stub_id);
             } else {
-                Log.i(Constants.TAG, "Setting image bitmap");
+                if(debug) Log.i(Constants.TAG, "Setting image bitmap");
                 imageView.setImageBitmap(softRef.get());
                 if( softRef.get() == null ) {
-                    Log.e(Constants.TAG, "Null bitmap: " + url);
+                    if(debug) Log.e(Constants.TAG, "Null bitmap: " + url);
                 }
             }
         }
         else
         {
-            Log.i(Constants.TAG, "Not in cache, queueing "  + url);
+            if(debug) Log.i(Constants.TAG, "Not in cache, queueing "  + url);
             queuePhoto(url, activity, imageView);
             imageView.setImageResource(stub_id);
         }
@@ -94,14 +94,14 @@ public class ImageLoader {
 
     private void queuePhoto(String url, Activity activity, ImageView imageView)
     {
-        Log.i(Constants.TAG, "Queueing: " + url);
+        if(debug) Log.i(Constants.TAG, "Queueing: " + url);
 
         // This ImageView may be used for other images before.
         // So there may be some old tasks in the queue. We need to discard them.
         photosQueue.Clean(imageView);
         PhotoToLoad p=new PhotoToLoad(url, imageView);
         synchronized( photosQueue.photosToLoad ){
-            photosQueue.photosToLoad.push(p);
+            photosQueue.photosToLoad.add(p);
             photosQueue.photosToLoad.notifyAll();
         }
 
@@ -113,21 +113,21 @@ public class ImageLoader {
     private Bitmap getBitmap(String url)
     {
         // I identify images by hashcode. Not a perfect solution, good for the demo.
-        Log.i(Constants.TAG, "Getting image in thread: " + url);
+        if(debug) Log.i(Constants.TAG, "Getting image in thread: " + url);
         String filename=String.valueOf(url.hashCode());
         File f=new File(cacheDir, filename);
 
         //from SD cache
         Bitmap b = decodeFile(f);
         if(b != null) {
-            Log.i(Constants.TAG, "Found in cache." );
+            if(debug) Log.i(Constants.TAG, "Found in cache." );
             return b;
         }
 
 
         //from web
         try {
-            Log.i(Constants.TAG, "Downloading from web");
+            if(debug) Log.i(Constants.TAG, "Downloading from web");
             Bitmap bitmap = null;
             InputStream is = new URL(url).openStream();
             OutputStream os = new FileOutputStream(f);
@@ -145,15 +145,15 @@ public class ImageLoader {
     //decodes image and scales it to reduce memory consumption
     private Bitmap decodeFile(File f){
         try {
-            Log.i(Constants.TAG, "Decoding image: " + f.toString());
+            if(debug) Log.i(Constants.TAG, "Decoding image: " + f.toString());
             Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
-            Log.i(Constants.TAG, "decoded a real bitmap!");
+            if(debug) Log.i(Constants.TAG, "decoded a real bitmap!");
             return(b);
         } catch (FileNotFoundException e) {
-            Log.i(Constants.TAG, "File not found");
+            if(debug) Log.i(Constants.TAG, "File not found");
             return null;
         } catch (Exception ex) {
-            Log.e(Constants.TAG, "Some other shit failed in decodeFile");
+            if(debug) Log.e(Constants.TAG, "Some other shit failed in decodeFile");
             ex.printStackTrace();
             return null;
         }
@@ -180,7 +180,8 @@ public class ImageLoader {
     // stores list of photos to download
     class PhotosQueue
     {
-        private Stack<PhotoToLoad> photosToLoad=new Stack<PhotoToLoad>();
+        // private Stack<PhotoToLoad> photosToLoad = new Stack<PhotoToLoad>();
+        private LinkedList<PhotoToLoad> photosToLoad = new LinkedList<PhotoToLoad>();
 
         //removes all instances of this ImageView
         public void Clean(ImageView image)
@@ -199,7 +200,7 @@ public class ImageLoader {
             try {
                 while(true)
                 {
-                    //thread waits until there are any images to load in the queue
+                    // thread waits until there are any images to load in the queue
                     if(photosQueue.photosToLoad.size() == 0) {
                         synchronized(photosQueue.photosToLoad){
                             photosQueue.photosToLoad.wait();
@@ -209,11 +210,11 @@ public class ImageLoader {
                     {
                         PhotoToLoad photoToLoad;
                         synchronized(photosQueue.photosToLoad){
-                            photoToLoad=photosQueue.photosToLoad.pop();
+                            photoToLoad=photosQueue.photosToLoad.remove();
                         }
                         Bitmap bmp = getBitmap(photoToLoad.url);
                         if(bmp == null) {
-                            Log.e(Constants.TAG, "Bitmap loaded as null!");
+                            if(debug) Log.e(Constants.TAG, "Bitmap loaded as null!");
                         } else {
                             cache.put(photoToLoad.url, new SoftReference<Bitmap>(bmp));
                             Object tag = photoToLoad.imageView.getTag();
@@ -222,7 +223,7 @@ public class ImageLoader {
                                 Activity a = (Activity)photoToLoad.imageView.getContext();
                                 a.runOnUiThread(bd);
                             } else {
-                                Log.i(Constants.TAG, "Got image w/o tag!");
+                                if(debug) Log.i(Constants.TAG, "Got image w/o tag!");
                             }
                         }
                     }

@@ -64,6 +64,9 @@ public class HomeActivity extends Activity
 
 
     public void openPopularGridIntent(View view) {
+        // if no login data, prompt for login
+        setAccessToken();
+
         if( access_token == null )
             openLoginIntent(null);
         else {
@@ -80,6 +83,7 @@ public class HomeActivity extends Activity
         SharedPreferences sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
+        editor.commit();
 
         Intent loginIntent = new Intent(HomeActivity.this, LoginActivity.class);
         loginIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);

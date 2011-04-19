@@ -40,7 +40,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -61,12 +60,13 @@ public class ImageGridActivity extends Activity {
     GridView grid;
     LazyGridAdapter adapter;
     ArrayList<InstagramImage> instagramImageList;
-    MyHttpClient httpClient = null;
     ActionBar actionBar;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Log.i(Constants.TAG, "ImageGridActivity onCreate");
         setContentView(R.layout.image_grid);
 
         Bundle extras = getIntent().getExtras();
@@ -78,12 +78,6 @@ public class ImageGridActivity extends Activity {
         actionBar = (ActionBar) findViewById(R.id.actionbar);
         actionBar.setTitle(title);
 
-        httpClient = new MyHttpClient(getApplicationContext());
-
-        init();
-    }
-
-    private void init() {
         // set that list to background downloader
         instagramImageList = new ArrayList<InstagramImage>();
         adapter = new LazyGridAdapter(this, instagramImageList);
@@ -124,37 +118,51 @@ public class ImageGridActivity extends Activity {
             }
         }
 
-        protected void onProgressUpdate(String toastText) {
-            Toast.makeText(ImageGridActivity.this, toastText, Toast.LENGTH_SHORT).show();
-            Log.e(Constants.TAG, toastText);
+        protected void onProgressUpdate(String... toastText) {
+            Toast.makeText(ImageGridActivity.this, toastText[0], Toast.LENGTH_SHORT).show();
+            Log.e(Constants.TAG, toastText[0]);
         }
 
         protected Boolean doInBackground(Void... voids) {
-            HttpEntity httpEntity;
+
+            Log.i(Constants.TAG, "ImageGridActivity FETCH");
+
+            HttpEntity httpEntity = null;
 
             if( Utils.isOnline(getApplicationContext()) == false ) {
                 publishProgress("No connection to Internet.\nTry again later");
                 return false;
             }
 
-            try {
-                HttpGet httpGet = new HttpGet(sourceUrl);
-                HttpResponse httpResponse = httpClient.execute(httpGet);
+            boolean success = false;
+            int fail_count = 0;
+            while( success == false  ) {
+                try {
+                    MyHttpClient httpClient = new MyHttpClient(getApplicationContext());
+                    HttpGet httpGet = new HttpGet(sourceUrl);
+                    HttpResponse httpResponse = httpClient.execute(httpGet);
 
-                // test result code
-                if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
-                    publishProgress("Login failed.");
+                    // test result code
+                    if( httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
+                        publishProgress("Login failed.");
+                        return false;
+                    }
+
+                    // test json response
+                    httpEntity = httpResponse.getEntity();
+                    success = true;
+                } catch( SSLException sslException ) {
+                    Log.e(Constants.TAG, "SSL Exception: " + fail_count);
+                    success = false;
+                    fail_count++;
+                    if( fail_count > 10 ) {
+                        publishProgress("SSL exception.\nMost times, you can simply try again.");
+                        return false;
+                    }
+                } catch (IOException ioException) {
+                    publishProgress("Authorization error");
                     return false;
                 }
-
-                // test json response
-                httpEntity = httpResponse.getEntity();
-            } catch( SSLException sslException ) {
-                publishProgress("SSL exception.\nMost times, you can simply try again.");
-                return false;
-            } catch (IOException ioException) {
-                publishProgress("Authorization error");
-                return false;
             }
 
             try {

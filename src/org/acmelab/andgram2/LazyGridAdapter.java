@@ -71,8 +71,9 @@ public class LazyGridAdapter extends BaseAdapter {
         ImageView imageView;
         if (convertView == null) {  // if it's not recycled, initialize some attributes
             Log.i(Constants.TAG, "Creating view for the first time");
+            final int imageDim = (int) (75 * activity.getResources().getDisplayMetrics().density + 0.5f );
             imageView = new ImageView(activity);
-            imageView.setLayoutParams(new GridView.LayoutParams(75, 75));
+            imageView.setLayoutParams(new GridView.LayoutParams(imageDim, imageDim));
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
             imageView.setPadding(0, 0, 0, 0);
         } else {
