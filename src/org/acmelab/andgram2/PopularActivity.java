@@ -71,7 +71,6 @@ public class PopularActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if(debug) Log.i(Constants.TAG, "PopularActivity onCreate");
         setContentView(R.layout.popular_layout);
 
         Bundle extras = getIntent().getExtras();
