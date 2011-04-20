@@ -207,12 +207,7 @@ public class FeedActivity extends Activity {
                         instagramImage.id = image.getString("id");
                         instagramImage.permalink = image.getString("link");
 
-                        // TODO: undo when instagram fixes
-                        try {
-                            instagramImage.user_has_liked = image.getBoolean("user_has_liked");
-                        } catch( JSONException je ) {
-                            instagramImage.user_has_liked = true;
-                        }
+                        instagramImage.user_has_liked = image.getBoolean("user_has_liked");
 
                         // permalinks
                         instagramImage.thumbnail = thumbnailImage.getString("url");
@@ -287,8 +282,6 @@ public class FeedActivity extends Activity {
 
     public AdapterView.OnItemClickListener itemClickListener = new AdapterView.OnItemClickListener() {
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-            if(debug) Log.i(Constants.TAG, "Clicked: " + String.valueOf(i));
-
             final InstagramImage instagramImage = (InstagramImage)adapter.getItem(i);
 
             // build dialog
@@ -315,7 +308,11 @@ public class FeedActivity extends Activity {
                 public void onClick(DialogInterface dialog, int item) {
                     switch(item) {
                         case 0:
-                            likeUnlike(instagramImage);
+                            if (instagramImage.user_has_liked == true) {
+                                unlike(instagramImage);
+                            } else {
+                                like(instagramImage);
+                            }
                             break;
                         case 1:
                             showCommentDialog(instagramImage);
@@ -384,8 +381,6 @@ public class FeedActivity extends Activity {
                 this);
         if( jsonResponse != null ) {
             image.comment_list.add(new Comment(Utils.getUsername(getApplicationContext()),comment));
-            Toast.makeText(this,
-                    "Comment successful", Toast.LENGTH_SHORT).show();
             adapter.notifyDataSetChanged();
         } else {
             Toast.makeText(this,
@@ -393,13 +388,6 @@ public class FeedActivity extends Activity {
         }
     }
 
-    public void likeUnlike(InstagramImage image) {
-        if( image.user_has_liked == true ) {
-            unlike(image);
-        } else {
-            like(image);
-        }
-    }
 
     public void like(InstagramImage image) {
         List<NameValuePair> postParams = new ArrayList<NameValuePair>();
@@ -411,10 +399,12 @@ public class FeedActivity extends Activity {
                 url,
                 postParams,
                 this);
+
         if( jsonResponse != null ) {
             if( image.liker_list == null ) image.liker_list = new ArrayList<String>();
             image.liker_list.add(Utils.getUsername(getApplicationContext()));
             image.liker_count++;
+            image.user_has_liked = true;
             adapter.notifyDataSetChanged();
         }
     }
@@ -431,6 +421,7 @@ public class FeedActivity extends Activity {
         if( jsonResponse != null ) {
             image.liker_list.remove(Utils.getUsername(getApplicationContext()));
             image.liker_count--;
+            image.user_has_liked = false;
             adapter.notifyDataSetChanged();
         }
     }

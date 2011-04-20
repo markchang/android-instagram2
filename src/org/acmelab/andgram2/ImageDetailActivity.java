@@ -63,6 +63,9 @@ import java.util.Date;
  * Time: 1:06 AM
  * Shows a single image
  */
+
+// TODO: asynctask json and image download
+// TODO: add scrollable
 public class ImageDetailActivity extends Activity {
 
     private static final boolean debug = true;
@@ -272,12 +275,7 @@ public class ImageDetailActivity extends Activity {
                 instagramImage.id = image.getString("id");
                 instagramImage.permalink = image.getString("link");
 
-                // TODO: undo when instagram fixes
-                try {
-                    instagramImage.user_has_liked = image.getBoolean("user_has_liked");
-                } catch (JSONException je) {
-                    instagramImage.user_has_liked = true;
-                }
+                instagramImage.user_has_liked = image.getBoolean("user_has_liked");
 
                 // permalinks
                 instagramImage.thumbnail = thumbnailImage.getString("url");

@@ -27,46 +27,51 @@
   ~ or implied, of Mark L. Chang.
   -->
 
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="fill_parent"
-    android:layout_height="wrap_content">
 
-    <com.markupartist.android.widget.ActionBar
-        android:id="@+id/detail_actionbar"
-        style="@style/ActionBar"
-        />
+<ScrollView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/scroll"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
 
-    <TextView
-        android:id="@+id/detail_username"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="left|center_vertical"
-        android:textSize="14dip"
-        android:layout_marginLeft="10dip"/>
-    <ImageView
-        android:id="@+id/detail_image"
-        android:layout_weight="1"
-        android:src="@drawable/stub"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:scaleType="centerInside"
-        android:adjustViewBounds="true"
-        />
-    <TextView
-        android:id="@+id/detail_caption"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="left|center_vertical"
-        android:textSize="12dip"
-        android:layout_marginLeft="10dip"/>
-    <TextView
-        android:id="@+id/detail_comments"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="left|center_vertical"
-        android:textSize="12dip"
-        android:layout_marginLeft="10dip"/>
-</LinearLayout>
+        <com.markupartist.android.widget.ActionBar
+                android:id="@+id/detail_actionbar"
+                style="@style/ActionBar"
+                />
 
+        <TextView
+                android:id="@+id/detail_username"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left|center_vertical"
+                android:textSize="14dip"
+                android:layout_marginLeft="10dip"/>
+        <ImageView
+                android:id="@+id/detail_image"
+                android:layout_weight="1"
+                android:src="@drawable/stub"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:scaleType="centerInside"
+                android:adjustViewBounds="true"
+                />
+        <TextView
+                android:id="@+id/detail_caption"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left|center_vertical"
+                android:textSize="12dip"
+                android:layout_marginLeft="10dip"/>
+        <TextView
+                android:id="@+id/detail_comments"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left|center_vertical"
+                android:textSize="12dip"
+                android:layout_marginLeft="10dip"/>
+    </LinearLayout>
+</ScrollView>
