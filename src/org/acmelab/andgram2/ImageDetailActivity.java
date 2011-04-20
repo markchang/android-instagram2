@@ -32,6 +32,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
@@ -64,8 +65,7 @@ import java.util.Date;
  * Shows a single image
  */
 
-// TODO: asynctask json and image download
-// TODO: add scrollable
+// TODO: make image clickable for comment/like/unlike/share
 public class ImageDetailActivity extends Activity {
 
     private static final boolean debug = true;
@@ -92,24 +92,15 @@ public class ImageDetailActivity extends Activity {
 
         httpClient = new MyHttpClient(this);
 
-        getImageDetails(id);
+        new FetchImage().execute(id);
     }
 
-    private void getImageDetails(String id) {
-        actionBar.setProgressBarVisibility(View.VISIBLE);
-
+    private void drawImageDetails(InstagramImage image) {
         // get handle to UI elements
         TextView username = (TextView) findViewById(R.id.detail_username);
         ImageView imageView = (ImageView) findViewById(R.id.detail_image);
         TextView caption = (TextView) findViewById(R.id.detail_caption);
         TextView comments = (TextView) findViewById(R.id.detail_comments);
-
-        // construct new InstagramImage
-        InstagramImage image = getImage(id);
-
-        if( image == null) {
-            return;
-        }
 
         // render it
         imageView.setTag(image.standard_resolution);
@@ -146,52 +137,18 @@ public class ImageDetailActivity extends Activity {
         }
 
         comments.setText(Html.fromHtml(likerString.toString()));
+    }
 
-        // now get the image and show it in the imageview
-        Bitmap bitmap = getBitmap(image.standard_resolution);
+    private void drawImageBitmap(Bitmap bitmap) {
+        ImageView imageView = (ImageView) findViewById(R.id.detail_image);
         if( bitmap != null ) {
             imageView.setImageBitmap(bitmap);
         } else {
             Toast.makeText(this,"Error fetching photo!", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // stop progress bar
-        actionBar.setProgressBarVisibility(View.GONE);
     }
 
-    private Bitmap getBitmap(String url) {
-        File downloadDir;
-
-        //Find the dir to save cached images
-        if (android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
-            downloadDir = new File(android.os.Environment.getExternalStorageDirectory(),Constants.OUTPUT_DIR);
-        else {
-            Toast.makeText(this, "You need a SD card!", Toast.LENGTH_SHORT).show();
-            return null;
-        }
-
-        if(!downloadDir.exists())
-            downloadDir.mkdirs();
-
-        String filename = String.valueOf(url.hashCode());
-
-        try {
-            File f=new File(downloadDir, filename);
-            if(debug) Log.i(Constants.TAG, "Downloading from web");
-            Bitmap bitmap = null;
-            InputStream is = new URL(url).openStream();
-            OutputStream os = new FileOutputStream(f);
-            Utils.CopyStream(is, os);
-            os.close();
-            is.close();
-            bitmap = decodeFile(f);
-            return bitmap;
-        } catch (Exception ex){
-           ex.printStackTrace();
-           return null;
-        }
-    }
 
     private Bitmap decodeFile(File f){
         try {
@@ -210,139 +167,213 @@ public class ImageDetailActivity extends Activity {
     }
 
 
-    private InstagramImage getImage(String id) {
-        if (debug) Log.i(Constants.TAG, "Fetching single image");
 
-        HttpEntity httpEntity = null;
-
-        // construct url
-        String url = Utils.decorateEndpoint(Constants.MEDIA_ENDPOINT + id, Utils.getAccessToken(getApplicationContext()));
-
-
-        if (Utils.isOnline(getApplicationContext()) == false) {
-            Toast.makeText(this, "No connection to Internet.\nTry again later", Toast.LENGTH_SHORT).show();
-            return null;
+    private class FetchImage extends AsyncTask<String, String, InstagramImage> {
+        protected void onPreExecute() {
+            actionBar.setProgressBarVisibility(View.VISIBLE);
+            TextView caption = (TextView) findViewById(R.id.detail_username);
+            caption.setText("Loading...");
         }
 
-        boolean success = false;
-        int fail_count = 0;
-        while (success == false) {
+        protected void onPostExecute(InstagramImage image) {
+            actionBar.setProgressBarVisibility(View.GONE);
+            drawImageDetails(image);
+            new FetchBitmap().execute(image.standard_resolution);
+        }
+
+        protected void onProgressUpdate(String... toastText) {
+            Toast.makeText(ImageDetailActivity.this, toastText[0], Toast.LENGTH_SHORT).show();
+            if(debug) Log.e(Constants.TAG, toastText[0]);
+        }
+
+        protected InstagramImage doInBackground(String... id) {
+            if (debug) Log.i(Constants.TAG, "Fetching single image");
+
+            HttpEntity httpEntity = null;
+
+            // construct url
+            String url = Utils.decorateEndpoint(Constants.MEDIA_ENDPOINT + id[0], Utils.getAccessToken(getApplicationContext()));
+
+
+            if (Utils.isOnline(getApplicationContext()) == false) {
+                publishProgress("No connection to Internet.\nTry again later");
+                return null;
+            }
+
+            boolean success = false;
+            int fail_count = 0;
+            while (success == false) {
+                try {
+                    httpClient = new MyHttpClient(getApplicationContext());
+                    HttpGet httpGet = new HttpGet(url);
+                    HttpResponse httpResponse = httpClient.execute(httpGet);
+
+                    // test result code
+                    if (httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+                        publishProgress("Login failed.");
+                        return null;
+                    }
+
+                    httpEntity = httpResponse.getEntity();
+                    success = true;
+                } catch (SSLException sslException) {
+                    if (debug) Log.e(Constants.TAG, "SSL Exception: " + fail_count);
+                    success = false;
+                    fail_count++;
+                    if (fail_count > 10) {
+                        publishProgress("SSL exception.\nMost times, you can simply try again.");
+                        return null;
+                    }
+                } catch (IOException ioException) {
+                    publishProgress("Authorization error");
+                    return null;
+                }
+            }
+
             try {
-                httpClient = new MyHttpClient(getApplicationContext());
-                HttpGet httpGet = new HttpGet(url);
-                HttpResponse httpResponse = httpClient.execute(httpGet);
+                if (httpEntity != null) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(httpEntity.getContent(), "UTF-8"));
+                    String json = reader.readLine();
+                    JSONTokener jsonTokener = new JSONTokener(json);
+                    JSONObject jsonObject = new JSONObject(jsonTokener);
 
-                // test result code
-                if (httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-                    Toast.makeText(this, "Login failed.", Toast.LENGTH_SHORT).show();
+                    // create a new instance
+                    InstagramImage instagramImage = new InstagramImage();
+
+                    // parse the activity feed
+                    JSONObject image = jsonObject.getJSONObject("data");
+
+                    // image
+                    JSONObject images = image.getJSONObject("images");
+                    JSONObject thumbnailImage = images.getJSONObject("thumbnail");
+                    JSONObject lowResolutionImage = images.getJSONObject("low_resolution");
+                    JSONObject standardResolutionImage = images.getJSONObject("standard_resolution");
+                    instagramImage.id = image.getString("id");
+                    instagramImage.permalink = image.getString("link");
+
+                    instagramImage.user_has_liked = image.getBoolean("user_has_liked");
+
+                    // permalinks
+                    instagramImage.thumbnail = thumbnailImage.getString("url");
+                    instagramImage.low_resolution = lowResolutionImage.getString("url");
+                    instagramImage.standard_resolution = standardResolutionImage.getString("url");
+
+                    // user
+                    JSONObject user = image.getJSONObject("user");
+                    instagramImage.username = user.getString("username");
+                    instagramImage.user_id = user.getString("id");
+                    instagramImage.full_name = user.getString("full_name");
+
+                    // date taken_at
+                    Long dateLong = image.getLong("created_time");
+                    SimpleDateFormat formatter = new SimpleDateFormat("MMMM d, yyyy HH:mm");
+                    instagramImage.taken_at = formatter.format(new Date(dateLong * 1000L));
+
+                    // comments
+                    instagramImage.comment_count = image.getJSONObject("comments").getInt("count");
+                    JSONArray comments = image.getJSONObject("comments").getJSONArray("data");
+                    if (comments != null) {
+                        ArrayList<Comment> commentList = new ArrayList<Comment>();
+                        for (int c = 0; c < comments.length(); c++) {
+                            JSONObject comment = comments.getJSONObject(c);
+                            JSONObject from = comment.getJSONObject("from");
+                            commentList.add(new Comment(from.getString("username"),
+                                    comment.getString("text")));
+                        }
+                        instagramImage.comment_list = commentList;
+                    }
+
+                    // caption
+
+                    try {
+                        JSONObject caption = image.getJSONObject("caption");
+                        if (caption != null) {
+                            instagramImage.caption = caption.getString("text");
+                        }
+                    } catch (JSONException e) {
+                    }
+
+                    // likers
+                    try {
+                        instagramImage.liker_count = image.getJSONObject("likes").getInt("count");
+                        JSONArray likes = image.getJSONObject("likes").getJSONArray("data");
+                        if (likes != null) {
+                            ArrayList<String> likerList = new ArrayList<String>();
+                            if (likes.length() > 0) {
+                                for (int l = 0; l < likes.length(); l++) {
+                                    JSONObject like = likes.getJSONObject(l);
+                                    likerList.add(like.getString("username"));
+                                }
+                                instagramImage.liker_list = likerList;
+                            }
+                        }
+                    } catch (JSONException j) {
+                    }
+
+                    // got it!
+                    return instagramImage;
+
+                } else {
+                    publishProgress("Improper data returned from Instagram");
+                    if (debug) Log.e(Constants.TAG, "instagram returned bad data");
                     return null;
                 }
-
-                httpEntity = httpResponse.getEntity();
-                success = true;
-            } catch (SSLException sslException) {
-                if (debug) Log.e(Constants.TAG, "SSL Exception: " + fail_count);
-                success = false;
-                fail_count++;
-                if (fail_count > 10) {
-                    Toast.makeText(this, "SSL exception.\nMost times, you can simply try again.", Toast.LENGTH_SHORT).show();
-                    return null;
-                }
-            } catch (IOException ioException) {
-                Toast.makeText(this,"Authorization error", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
                 return null;
             }
         }
+    }
 
-        try {
-            if (httpEntity != null) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(httpEntity.getContent(), "UTF-8"));
-                String json = reader.readLine();
-                JSONTokener jsonTokener = new JSONTokener(json);
-                JSONObject jsonObject = new JSONObject(jsonTokener);
+    private class FetchBitmap extends AsyncTask<String, String, Bitmap> {
+        protected void onPreExecute() {
+            actionBar.setProgressBarVisibility(View.VISIBLE);
+        }
 
-                // create a new instance
-                InstagramImage instagramImage = new InstagramImage();
+        protected void onPostExecute(Bitmap bitmap) {
+            actionBar.setProgressBarVisibility(View.GONE);
+            drawImageBitmap(bitmap);
+        }
 
-                // parse the activity feed
-                JSONObject image = jsonObject.getJSONObject("data");
+        protected void onProgressUpdate(String... toastText) {
+            Toast.makeText(ImageDetailActivity.this, toastText[0], Toast.LENGTH_SHORT).show();
+            if(debug) Log.e(Constants.TAG, toastText[0]);
+        }
 
-                // image
-                JSONObject images = image.getJSONObject("images");
-                JSONObject thumbnailImage = images.getJSONObject("thumbnail");
-                JSONObject lowResolutionImage = images.getJSONObject("low_resolution");
-                JSONObject standardResolutionImage = images.getJSONObject("standard_resolution");
-                instagramImage.id = image.getString("id");
-                instagramImage.permalink = image.getString("link");
+        protected Bitmap doInBackground(String... url) {
 
-                instagramImage.user_has_liked = image.getBoolean("user_has_liked");
+            if(debug) Log.i(Constants.TAG, "Fetching bitmap");
 
-                // permalinks
-                instagramImage.thumbnail = thumbnailImage.getString("url");
-                instagramImage.low_resolution = lowResolutionImage.getString("url");
-                instagramImage.standard_resolution = standardResolutionImage.getString("url");
+            File downloadDir;
 
-                // user
-                JSONObject user = image.getJSONObject("user");
-                instagramImage.username = user.getString("username");
-                instagramImage.user_id = user.getString("id");
-                instagramImage.full_name = user.getString("full_name");
-
-                // date taken_at
-                Long dateLong = image.getLong("created_time");
-                SimpleDateFormat formatter = new SimpleDateFormat("MMMM d, yyyy HH:mm");
-                instagramImage.taken_at = formatter.format(new Date(dateLong * 1000L));
-
-                // comments
-                instagramImage.comment_count = image.getJSONObject("comments").getInt("count");
-                JSONArray comments = image.getJSONObject("comments").getJSONArray("data");
-                if (comments != null) {
-                    ArrayList<Comment> commentList = new ArrayList<Comment>();
-                    for (int c = 0; c < comments.length(); c++) {
-                        JSONObject comment = comments.getJSONObject(c);
-                        JSONObject from = comment.getJSONObject("from");
-                        commentList.add(new Comment(from.getString("username"),
-                                comment.getString("text")));
-                    }
-                    instagramImage.comment_list = commentList;
-                }
-
-                // caption
-
-                try {
-                    JSONObject caption = image.getJSONObject("caption");
-                    if (caption != null) {
-                        instagramImage.caption = caption.getString("text");
-                    }
-                } catch (JSONException e) {}
-
-                // likers
-                try {
-                    instagramImage.liker_count = image.getJSONObject("likes").getInt("count");
-                    JSONArray likes = image.getJSONObject("likes").getJSONArray("data");
-                    if (likes != null) {
-                        ArrayList<String> likerList = new ArrayList<String>();
-                        if (likes.length() > 0) {
-                            for (int l = 0; l < likes.length(); l++) {
-                                JSONObject like = likes.getJSONObject(l);
-                                likerList.add(like.getString("username"));
-                            }
-                            instagramImage.liker_list = likerList;
-                        }
-                    }
-                } catch (JSONException j) {}
-
-                // got it!
-                return instagramImage;
-
-            } else {
-                Toast.makeText(this,"Improper data returned from Instagram",Toast.LENGTH_SHORT).show();
-                if (debug) Log.e(Constants.TAG, "instagram returned bad data");
+            //Find the dir to save cached images
+            if (android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
+                downloadDir = new File(android.os.Environment.getExternalStorageDirectory(), Constants.OUTPUT_DIR);
+            else {
+                publishProgress("You need a SD card!");
                 return null;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+
+            if (!downloadDir.exists())
+                downloadDir.mkdirs();
+
+            String filename = String.valueOf(url.hashCode());
+
+            try {
+                File f = new File(downloadDir, filename);
+                if (debug) Log.i(Constants.TAG, "Downloading from web");
+                Bitmap bitmap = null;
+                InputStream is = new URL(url[0]).openStream();
+                OutputStream os = new FileOutputStream(f);
+                Utils.CopyStream(is, os);
+                os.close();
+                is.close();
+                bitmap = decodeFile(f);
+                return bitmap;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                return null;
+            }
         }
     }
 }
