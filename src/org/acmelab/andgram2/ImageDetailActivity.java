@@ -29,6 +29,8 @@
 package org.acmelab.andgram2;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -37,6 +39,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,7 +47,9 @@ import com.markupartist.android.widget.ActionBar;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,6 +61,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by IntelliJ IDEA.
@@ -65,13 +71,14 @@ import java.util.Date;
  * Shows a single image
  */
 
-// TODO: make image clickable for comment/like/unlike/share
 public class ImageDetailActivity extends Activity {
 
     private static final boolean debug = true;
     ActionBar actionBar;
     String id;
     MyHttpClient httpClient;
+    InstagramImage image;
+
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,7 +102,10 @@ public class ImageDetailActivity extends Activity {
         new FetchImage().execute(id);
     }
 
-    private void drawImageDetails(InstagramImage image) {
+    private void drawImageDetails(InstagramImage _image) {
+        // stash image for later use (so we can click on it)
+        this.image = _image;
+
         // get handle to UI elements
         TextView username = (TextView) findViewById(R.id.detail_username);
         ImageView imageView = (ImageView) findViewById(R.id.detail_image);
@@ -143,9 +153,153 @@ public class ImageDetailActivity extends Activity {
         ImageView imageView = (ImageView) findViewById(R.id.detail_image);
         if( bitmap != null ) {
             imageView.setImageBitmap(bitmap);
+
+            // set click listener
+
         } else {
             Toast.makeText(this,"Error fetching photo!", Toast.LENGTH_SHORT).show();
             return;
+        }
+    }
+
+    public void imageClick(View view) {
+        // build dialog
+        List<String> dialogItems = new ArrayList<String>();
+
+        // 0: like/unlike
+        if (image.user_has_liked == true) {
+            dialogItems.add("Unlike");
+        } else {
+            dialogItems.add("Like");
+        }
+
+        // 1: comment
+        dialogItems.add("Comment");
+
+        // 2: share
+        dialogItems.add("Share");
+
+        final CharSequence[] items = dialogItems.toArray(new String[dialogItems.size()]);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(ImageDetailActivity.this);
+        builder.setTitle("Choose your action");
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                switch (item) {
+                    case 0:
+                        if (image.user_has_liked == true) {
+                            unlike(image);
+                        } else {
+                            like(image);
+                        }
+                        break;
+                    case 1:
+                        showCommentDialog(image);
+                        break;
+                    case 2:
+                        showShareDialog(image);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    public void showShareDialog(InstagramImage image) {
+        // shoot the intent
+        // will default to "messaging / sms" if nothing else is installed
+        Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+        //Text seems to be necessary for Facebook and Twitter
+        sharingIntent.setType("text/plain");
+        sharingIntent.putExtra(Intent.EXTRA_TEXT, image.caption + " " + image.permalink);
+        startActivity(Intent.createChooser(sharingIntent,"Share using"));
+    }
+
+    public void showCommentDialog(InstagramImage image) {
+        final InstagramImage finalImage = image;
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+
+        alert.setTitle("Comment");
+
+        // Set an EditText view to get user input
+        final EditText input = new EditText(this);
+        alert.setView(input);
+
+        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                String comment = input.getText().toString();
+                postComment(comment, finalImage);
+            }
+        });
+
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                // Cancelled.
+            }
+        });
+
+        alert.show();
+    }
+
+    public void postComment(String comment, InstagramImage image) {
+        List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+        postParams.add(new BasicNameValuePair("text", comment));
+        postParams.add(new BasicNameValuePair("access_token", Utils.getAccessToken(getApplicationContext())));
+        String url = Constants.MEDIA_ENDPOINT + image.id + Constants.COMMENT_MEDIA_ENDPOINT;
+
+
+        JSONObject jsonResponse = Utils.doRestfulPut(httpClient,
+                url,
+                postParams,
+                this);
+        if( jsonResponse != null ) {
+            image.comment_list.add(new Comment(Utils.getUsername(getApplicationContext()),comment));
+            drawImageDetails(image);
+        } else {
+            Toast.makeText(this,
+                    "Comment failed", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    public void like(InstagramImage image) {
+        List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+        postParams.add(new BasicNameValuePair("access_token", Utils.getAccessToken(getApplicationContext())));
+
+        String url = Constants.MEDIA_ENDPOINT + image.id + Constants.LIKE_MEDIA_ENDPOINT;
+
+        JSONObject jsonResponse = Utils.doRestfulPut(httpClient,
+                url,
+                postParams,
+                this);
+
+        if( jsonResponse != null ) {
+            if( image.liker_list == null ) image.liker_list = new ArrayList<String>();
+            image.liker_list.add(Utils.getUsername(getApplicationContext()));
+            image.liker_count++;
+            image.user_has_liked = true;
+            drawImageDetails(image);
+        }
+    }
+
+    public void unlike(InstagramImage image) {
+        List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+        postParams.add(new BasicNameValuePair("access_token", Utils.getAccessToken(getApplicationContext())));
+
+        String url = Constants.MEDIA_ENDPOINT + image.id + Constants.LIKE_MEDIA_ENDPOINT;
+        String access_url = Utils.decorateEndpoint(url, Utils.getAccessToken(getApplicationContext()));
+
+        JSONObject jsonResponse = Utils.doRestfulDelete(httpClient, access_url, this);
+
+        if( jsonResponse != null ) {
+            image.liker_list.remove(Utils.getUsername(getApplicationContext()));
+            image.liker_count--;
+            image.user_has_liked = false;
+            drawImageDetails(image);
         }
     }
 

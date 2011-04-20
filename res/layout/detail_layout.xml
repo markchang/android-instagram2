@@ -58,6 +58,8 @@
                 android:layout_height="wrap_content"
                 android:scaleType="centerInside"
                 android:adjustViewBounds="true"
+                android:clickable="true"
+                android:onClick="imageClick"
                 />
         <TextView
                 android:id="@+id/detail_caption"
