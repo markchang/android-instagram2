@@ -47,6 +47,7 @@ public class InstagramImage {
     public String full_name = "";
     public String caption = "";
     public String taken_at;
+    public Long taken_time;
     public String id;
 
     public boolean user_has_liked;

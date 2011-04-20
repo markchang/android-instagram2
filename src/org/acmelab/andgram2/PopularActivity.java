@@ -228,6 +228,7 @@ public class PopularActivity extends Activity {
                         Long dateLong = image.getLong("created_time");
                         SimpleDateFormat formatter = new SimpleDateFormat("MMMM d, yyyy HH:mm");
                         instagramImage.taken_at = formatter.format(new Date(dateLong * 1000L));
+                        instagramImage.taken_time = dateLong * 1000L;
 
                         // comments
                         instagramImage.comment_count = image.getJSONObject("comments").getInt("count");

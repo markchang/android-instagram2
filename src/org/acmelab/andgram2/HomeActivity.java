@@ -90,6 +90,19 @@ public class HomeActivity extends Activity
         }
     }
 
+    public void openUserFeedIntent(View view) {
+        access_token = Utils.getAccessToken(this);
+
+        if( access_token == null )
+            openLoginIntent(null);
+        else {
+            String feed_endpoint = Utils.decorateEndpoint(Constants.USER_RECENT_ENDPOINT, access_token);
+            Intent feedIntent = new Intent(HomeActivity.this, FeedActivity.class);
+            feedIntent.putExtra("endpoint", feed_endpoint);
+            feedIntent.putExtra("title", R.string.userfeed);
+            startActivity(feedIntent);
+        }
+    }
 
     public void openLoginIntent(View view) {
         // clear all login data

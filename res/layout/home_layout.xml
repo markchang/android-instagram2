@@ -41,7 +41,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1">
             <Button android:id="@+id/user_feed_button"
-                    android:onClick="openUserfeedIntent"
+                    android:onClick="openUserFeedIntent"
                     style="@style/DashboardButton"
                     android:text="@string/userfeed"
                     android:drawableTop="@drawable/ic_menu_slideshow"/>
