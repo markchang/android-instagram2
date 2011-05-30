@@ -46,7 +46,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import sun.awt.image.ImageDecoder;
 
 import javax.net.ssl.SSLException;
 import java.io.BufferedReader;
